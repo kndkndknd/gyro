@@ -19,8 +19,10 @@ const wss: WebSocket.Server = new WebSocket.Server({ port: 3333 });
 
 //app.use(favicon(Path.join(__dirname, 'lib/favicon.ico')));
 app.use(Express.static(Path.join(__dirname, 'client')));
+
 app.get('/', function(req, res) {
-  res.render('index.html')
+  res.sendFile(__dirname + '/client/index.html')
+  //res.render('./index.html')
 });
 
 const httpskey = {
@@ -41,11 +43,7 @@ wss.on('connection', function connection(ws:any) {
     console.log(data.message);
     switch(data.message) {
       default:
-        console.log(data)
-        ws.send(JSON.stringify({
-          "message":"ack",
-          "value": 80
-        }));
+        console.log("year")
         break;
     }
   });

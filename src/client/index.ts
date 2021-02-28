@@ -1,4 +1,6 @@
-const ws: WebSocket = new WebSocket("wss://192.168.0.10:3333");
+import { text } from "express";
+
+const ws: WebSocket = new WebSocket("ws://localhost:3333");
 
 let video:HTMLElement;
 let buffer = document.createElement('canvas');
@@ -30,8 +32,16 @@ const initialize = () =>{
   oscGain.gain.setValueAtTime(0,0);
   oscGain.connect(masterGain)
   osc.start(0);
+  const json = {
+    message: "hello",
+    valA: 0,
+    valB: 1,
+    valC: 100
+  }
   ws.onopen = function (event) {
-    ws.send("Here's some text that the server is urgently awaiting!");
+    console.log(event)
+    //ws.send("Here's some text that the server is urgently awaiting!");
+    ws.send(JSON.stringify(json));
   };
 }
 
@@ -93,4 +103,30 @@ clickListner.addEventListener("click", (()=>{
   if(!initFlag) initialize()
 }), false);
 
-textPrint(ctx, canvas, "click screen");
+//textPrint(ctx, canvas, "click screen");
+
+let i = 0
+
+const handleOrientation = (event: any) => {
+  var absolute = event.absolute;
+  var alpha    = event.alpha;
+  var beta     = event.beta;
+  var gamma    = event.gamma;
+  console.log(event)
+  textPrint(ctx, canvas, String(i));
+  i++
+}
+
+if(window.DeviceOrientationEvent){
+  window.addEventListener("deviceorientation", (event: any)=>{
+    //alert("debug")
+    textPrint(ctx, canvas, event.alpha)
+    //i++
+  }, true);
+  //window.addEventListener("deviceorientation", ()=>{alert("debug")}, true);
+//window.addEventListener("deviceorientation", handleOrientation, true);
+  //textPrint(ctx, canvas, "device have gyro sensor")
+} else {
+  //console.log("device not have gyro sensor")
+  textPrint(ctx, canvas, "device not have gyro sensor")
+}

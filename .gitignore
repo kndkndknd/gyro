@@ -1,5 +1,5 @@
 node_modules
-dist/*
-dist/client/*
+dist/*.js
+dist/client/*.js
 yarn.lock
 .DS_Store

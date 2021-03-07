@@ -1,6 +1,11 @@
-import { text } from "express";
+import { textPrint } from "./module"
 
 const ws: WebSocket = new WebSocket("ws://localhost:3333");
+ws.onopen = function (event) {
+  console.log(event)
+  //ws.send("text")
+  ws.send(JSON.stringify({"message": "test", "val": 0}));
+};
 
 let video:HTMLElement;
 let buffer = document.createElement('canvas');
@@ -11,18 +16,25 @@ let masterGain: GainNode
 let osc: OscillatorNode
 let oscGain: GainNode
 let oscPortament:number = 0;
-//const canvas: = document.getElementById('cnvs');
 const canvas = <HTMLCanvasElement> document.getElementById('cnvs')
 const ctx = <CanvasRenderingContext2D> canvas.getContext('2d');
 
+let absolute: number = 0;
+let alpha: number = 0;
+let beta: number = 0;
+let gamma: number = 0;
+
 const initialize = () =>{
-  erasePrint(ctx, canvas);
+  //erase Draw
+  ctx.clearRect(0, 0, canvas.width, canvas.height);  
+
   initFlag = true
+  setInterval(handleInterval, 500); //handleorientation
   console.log("client start")
   //audioContext
   audioContext = new AudioContext();
   masterGain = audioContext.createGain();
-  masterGain.gain.setValueAtTime(1,0) //変数別途
+  masterGain.gain.setValueAtTime(1,0) 
   masterGain.connect(audioContext.destination);
   // sinewave
   osc = audioContext.createOscillator();
@@ -38,62 +50,30 @@ const initialize = () =>{
     valB: 1,
     valC: 100
   }
-  ws.onopen = function (event) {
-    console.log(event)
-    //ws.send("Here's some text that the server is urgently awaiting!");
+  //ws.onopen = function (event) {
+    // console.log(event)
     ws.send(JSON.stringify(json));
-  };
+  // };
 }
 
-const erasePrint = (ctx:CanvasRenderingContext2D, canvas:HTMLCanvasElement) => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);  
-}
 
-const textPrint = (ctx:CanvasRenderingContext2D, canvas:HTMLCanvasElement, text:string) => {
+const textDraw = (ctx:CanvasRenderingContext2D, canvas:HTMLCanvasElement, text:string) => {
   ctx.globalAlpha = 1
   ctx.fillStyle = "black"
-  let textArr:[string] = [text]
-  let fontSize:number = 20
-  let textLength:number = 0
-  Array.prototype.forEach.call(text, (s,i)=> {
-    let chr = text.charCodeAt(i)
-    if((chr >= 0x00 && chr < 0x81) || (chr === 0xf8f0) || (chr >= 0xff61 && chr < 0xffa0) || (chr >= 0xf8f1 && chr < 0xf8f4)){
-      textLength += 1;
-    }else{
-      textLength += 2;
-    }
-  })
-  if(textLength > 20) {
-    fontSize = Math.floor((canvas.width * 4 / 3) / 20)
-    textArr = [""]
-    let lineNo = 0
-    Array.prototype.forEach.call(text, (element:string,index:number) =>{
-      if(index % 16 > 0 || index === 0) {
-        textArr[lineNo] += element
-        //console.log(textArr[lineNo])
-      } else {
-        textArr.push(element)
-        lineNo += 1
-        //console.log(textArr[lineNo])
-      }
-    });
-  } else if(textLength > 2) {
-    fontSize = Math.floor((canvas.width * 4 / 3) / textLength)
-  } else {
-    fontSize = Math.floor((canvas.height * 5 / 4) / textLength)
-  }
-  ctx.font = "bold " + String(fontSize) + "px 'Arial'";
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.strokeStyle = "white"
-  if(textArr.length === 1) {
+  const textVal = textPrint(text, canvas.width, canvas.height)
+  ctx.font = textVal.font
+
+  if(textVal.textArr.length === 1) {
     ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
     ctx.fillText(text, canvas.width / 2, canvas.height / 2);
   } else {
-    textArr.forEach((element:string, index:number) => {
+    textVal.textArr.forEach((element:string, index:number) => {
       //console.log("line" + String(index))
-      ctx.strokeText(element, canvas.width / 2, canvas.height / 2 + (fontSize * (index - Math.round(textArr.length / 2))));
-      ctx.fillText(element, canvas.width / 2, canvas.height / 2 + (fontSize * (index - Math.round(textArr.length / 2))));
+      ctx.strokeText(element, canvas.width / 2, canvas.height / 2 + (textVal.fontSize * (index - Math.round(textVal.textArr.length / 2))));
+      ctx.fillText(element, canvas.width / 2, canvas.height / 2 + (textVal.fontSize * (index - Math.round(textVal.textArr.length / 2))));
     })
   }
   ctx.restore();
@@ -103,30 +83,27 @@ clickListner.addEventListener("click", (()=>{
   if(!initFlag) initialize()
 }), false);
 
-//textPrint(ctx, canvas, "click screen");
 
-let i = 0
+let handleFlag:boolean = false
+
+const handleInterval = () => {
+  console.log(alpha)
+}
 
 const handleOrientation = (event: any) => {
-  var absolute = event.absolute;
-  var alpha    = event.alpha;
-  var beta     = event.beta;
-  var gamma    = event.gamma;
-  console.log(event)
-  textPrint(ctx, canvas, String(i));
-  i++
+  absolute = event.absolute;
+  alpha    = event.alpha;
+  beta     = event.beta;
+  gamma    = event.gamma;
+  //textDraw(ctx, canvas, event.alpha)
+  console.log("debug")
+  handleFlag = false
 }
 
 if(window.DeviceOrientationEvent){
-  window.addEventListener("deviceorientation", (event: any)=>{
-    //alert("debug")
-    textPrint(ctx, canvas, event.alpha)
-    //i++
-  }, true);
-  //window.addEventListener("deviceorientation", ()=>{alert("debug")}, true);
-//window.addEventListener("deviceorientation", handleOrientation, true);
-  //textPrint(ctx, canvas, "device have gyro sensor")
+  window.addEventListener("deviceorientation", handleOrientation, true);
 } else {
-  //console.log("device not have gyro sensor")
-  textPrint(ctx, canvas, "device not have gyro sensor")
+  console.log("device not have gyro sensor")
 }
+
+textDraw(ctx, canvas, "click screen");
